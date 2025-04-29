@@ -2,7 +2,7 @@
 title: Homework 8 - World Bank Analysis
 ---
 
-GITHUB URL:  <https://github.com/cmsc-vcu/cmsc408-sp2025-hw8-jleonard99>
+GITHUB URL:  <https://github.com/cmsc-vcu/cmsc408-sp2025-hw8-triniteytran14>
 
 
 # Problem Background
@@ -91,7 +91,12 @@ List all non-countries.
 ## (skills: select, where)
 
 run_sql_and_return_html(cnx,"""
-select "doh!" as "Homer says ..." from dual
+select 
+  'Short Name'
+from
+  world_bank_data.wdi_country
+where
+  region is NULL
 """)
 ```
 
@@ -110,19 +115,31 @@ Create your own copy of WDI_Country containing just countries.
 # drop table
 execute_ddl(cnx,"""
 drop table if exists wdi_country;
+drop table if exists peopleroles;
+drop table if exists peopleskills;
+drop table if exists roles;
+drop table if exists people;
+drop table if exists skills;
 """)
 ```
 
 ```{python}
 # create table
 execute_ddl(cnx,"""
+CREATE table wdi_country as
+select
+ *
+from
+ world_bank_data.wdi_country
+where
+  not region is NULL;
 """)
 ```
 
 ```{python}
 # show number of records
 run_sql_and_return_html(cnx,"""
-select "doh!" as "Homer says ..." from dual
+select count(*) from wdi_country
 """)
 ```
 
@@ -134,7 +151,7 @@ According to the World Bank, in 2020 there were how many countries in the world?
 ## (skills: select, aggregate)
 
 run_sql_and_return_html(cnx,"""
-select "doh!" as "Homer says ..." from dual
+select count(*) from wdi_country;
 """)
 
 ```
@@ -151,7 +168,14 @@ What are all unique values of region in the wdi_country table?
 ## (skills: select, aggregate, order by)
 
 run_sql_and_return_html(cnx,"""
-select "doh!" as "Homer says ..." from dual
+select
+  region
+from
+  wdi_country
+group by
+  region
+order by
+  region
 """)
 
 ```
@@ -165,7 +189,15 @@ How many countries are in each region?
 ## (skills: select, aggregate, group by, order by)
 
 run_sql_and_return_html(cnx,"""
-select "doh!" as "Homer says ..." from dual
+select
+  region,
+  count(region) as "# Countries"
+from
+  wdi_country
+group by
+  region
+order by
+  region
 """)
 
 ```
@@ -179,7 +211,15 @@ List the country full names and regions for all countries in north america.
 ## (skills: select, where, order by)
 
 run_sql_and_return_html(cnx,"""
-select "doh!" as "Homer says ..." from dual
+select
+  region,
+  `Long Name`
+from
+  wdi_country
+where
+  region in ('North America')
+order by
+   region
 """)
 
 ```
@@ -192,7 +232,14 @@ select "doh!" as "Homer says ..." from dual
 ## (skills: select, where)
 
 run_sql_and_return_html(cnx,"""
-select "doh!" as "Homer says ..." from dual
+select
+  region,
+  `Short Name` ,
+  `Long Name`
+from
+  wdi_country
+where
+  `Short Name` = 'Qatar'
 """)
 
 ```
@@ -206,7 +253,10 @@ select "doh!" as "Homer says ..." from dual
 ## (skills: select, where, order by)
 
 run_sql_and_return_html(cnx,"""
-select "doh!" as "Homer says ..." from dual
+select `Country Code`, `Short Name`, `2-alpha code`, `WB-2 code`,`Region`
+from wdi_country
+where
+ `2-alpha code` <> `WB-2 code`
 """)
 
 ```
@@ -220,7 +270,16 @@ select "doh!" as "Homer says ..." from dual
 ## (skills: select, aggregate, group by, order by)
 
 run_sql_and_return_html(cnx,"""
-select "doh!" as "Homer says ..." from dual
+select
+  `Income Group` ,
+  count(*)
+from
+  wdi_country
+group by
+  `Income Group`
+order by
+  count(*) desc,
+  `Income Group`
 """)
 
 ```
@@ -235,7 +294,16 @@ select "doh!" as "Homer says ..." from dual
 ## in the first column.
 
 run_sql_and_return_html(cnx,"""
-select "doh!" as "Homer says ..." from dual
+SELECT
+  `Short Name`,
+  region,
+  `Income Group`
+FROM
+  wdi_country
+WHERE
+  `Income Group` IS NULL AND region IS NOT NULL
+ORDER BY
+  region;
 """)
 
 ```
@@ -249,6 +317,9 @@ select "doh!" as "Homer says ..." from dual
 ## NOTE - if you get this wrong, all subsequent tables will be wrong!
 
 execute_ddl(cnx,"""
+UPDATE wdi_country
+SET `Income Group` = 'High income'
+WHERE `Income Group` IS NULL;
 """)
 
 
@@ -257,7 +328,14 @@ execute_ddl(cnx,"""
 ## Now, display the country again to verify the change stuck!
 
 run_sql_and_return_html(cnx,"""
-select "doh!" as "Homer says ..." from dual
+select
+  `Short Name` ,
+  region,
+  `Income Group`
+from
+  wdi_country
+where
+  `Short Name` = 'Venezuela'
 """)
 
 ```
@@ -271,7 +349,18 @@ select "doh!" as "Homer says ..." from dual
 ## (skills: select, aggregate, group by, order by)
 
 run_sql_and_return_html(cnx,"""
-select "doh!" as "Homer says ..." from dual
+SELECT
+  region,
+  `Income Group` AS income_group,
+  count(*) AS no_of_countries
+FROM
+  wdi_country
+WHERE
+  region IS NOT NULL AND `Income Group` IS NOT NULL
+GROUP BY
+  region, `Income Group`
+ORDER BY
+  region, `Income Group`;
 """)
 
 ```
@@ -292,7 +381,19 @@ select "doh!" as "Homer says ..." from dual
 ## (skills: select, aggregate, group by, nested query)
 
 run_sql_and_return_html(cnx,"""
-select "doh!" as "Homer says ..." from dual
+SELECT
+  region,
+  SUM(CASE WHEN `Income Group` = 'Low income' THEN 1 ELSE 0 END) AS `Low Income`,
+  SUM(CASE WHEN `Income Group` = 'Lower middle income' THEN 1 ELSE 0 END) AS `Low Middle`,
+  SUM(CASE WHEN `Income Group` = 'Upper middle income' THEN 1 ELSE 0 END) AS `Upper Middle`,
+  SUM(CASE WHEN `Income Group` = 'High income' THEN 1 ELSE 0 END) AS `High Income`,
+  SUM(1) AS "Row Total"
+FROM
+  wdi_country
+GROUP BY
+  region
+ORDER BY
+  region;
 """)
 
 ```
@@ -312,7 +413,21 @@ select "doh!" as "Homer says ..." from dual
 ## (skills: select, aggregate, group by, nested query, order by, limit)
 
 run_sql_and_return_html(cnx,"""
-select "doh!" as "Homer says ..." from dual
+select
+  count(*),
+  region,
+  `Income Group`
+from
+  wdi_country
+where
+  `Income Group` = 'Low Income'
+group by
+  region,
+  `Income Group`
+order by
+  count(*) desc
+limit
+  1
 """)
 
 ```
@@ -329,7 +444,19 @@ select "doh!" as "Homer says ..." from dual
 ## (skills: select, where, subquery)
 
 run_sql_and_return_html(cnx,"""
-select "doh!" as "Homer says ..." from dual
+select
+  `Country Code`,
+  `Short Name`,
+  region,
+  `Income Group`
+from
+  wdi_country
+where
+  1=1
+  and `Income Group` = (select `Income Group` from wdi_country where `Country Code`='MHL')
+  and region = (select region from wdi_country where `Country Code`='MHL')
+order by
+  `Short Name`
 """)
 
 ```
@@ -354,7 +481,37 @@ select "doh!" as "Homer says ..." from dual
 ## (skills: select, where, subqueries, joins)
 
 run_sql_and_return_html(cnx,"""
-select "doh!" as "Homer says ..." from dual
+with region_cte as (
+    select region
+    from wdi_country
+    group by region
+),
+income_cte as (
+    select `Income Group`
+    from wdi_country
+    where `Income Group` is not NULL
+    group by `Income Group`
+),
+pair_cte as (
+    select *
+    from region_cte, income_cte
+),
+merge_cte as (
+    select
+       a.region, a.`Income Group`, count(b.`Short Name`) as Num_Countries
+    from pair_cte a
+    left join wdi_country b on (
+            a.region = b.region
+            and a.`Income Group` = b.`Income Group`
+        )
+    group by 
+    a.region, a.`Income Group`
+)
+select *
+from merge_cte
+where 
+    Num_Countries = 0;
+
 """)
 
 ```
@@ -378,7 +535,56 @@ select "doh!" as "Homer says ..." from dual
 ## (skills: select, where, subqueries, joins, aggregate functions)
 
 run_sql_and_return_html(cnx,"""
-select "doh!" as "Homer says ..." from dual
+WITH 
+region_cte AS (
+    SELECT region, COUNT(*) AS region_cnt 
+    FROM wdi_country
+    WHERE region IS NOT NULL
+    GROUP BY region
+), 
+income_cte AS (
+    SELECT `Income Group`, COUNT(*) AS income_cnt
+    FROM wdi_country
+    WHERE `Income Group` IS NOT NULL
+    GROUP BY `Income Group`
+), 
+total_cte AS (
+    SELECT COUNT(*) AS total_cnt
+    FROM wdi_country
+    WHERE region IS NOT NULL AND `Income Group` IS NOT NULL
+), 
+pair_cte AS (
+    SELECT
+        region,
+        `Income Group`,
+        COUNT(*) AS pair_cnt
+    FROM
+        wdi_country
+    WHERE
+        region IS NOT NULL
+        AND `Income Group` IS NOT NULL
+    GROUP BY
+        region, `Income Group`
+), 
+merge_cte AS (
+    SELECT
+        a.region,
+        a.`Income Group`,
+        a.pair_cnt,
+        b.region_cnt,
+        c.income_cnt,
+        d.total_cnt,
+        ROUND(100.0 * a.pair_cnt / d.total_cnt, 1) AS `Pct of Total`
+    FROM
+        pair_cte a
+        LEFT JOIN region_cte b ON a.region = b.region
+        LEFT JOIN income_cte c ON a.`Income Group` = c.`Income Group`
+        CROSS JOIN total_cte d
+)
+SELECT * 
+FROM merge_cte
+ORDER BY region, `Income Group`;
+
 """)
 
 
@@ -392,8 +598,61 @@ select "doh!" as "Homer says ..." from dual
 ## columns, Region in the rows and Percent of total in each cell of the table.
 
 run_sql_and_return_html(cnx,"""
-select "doh!" as "Homer says ..." from dual
+WITH 
+region_cte AS (
+    SELECT region, COUNT(*) AS region_cnt 
+    FROM wdi_country 
+    GROUP BY region
+), 
+income_cte AS (
+    SELECT `Income Group`, COUNT(*) AS income_cnt 
+    FROM wdi_country 
+    GROUP BY `Income Group`
+), 
+total_cte AS (
+    SELECT COUNT(*) AS total_cnt 
+    FROM wdi_country
+), 
+pair_cte AS (
+    SELECT
+        region,
+        `Income Group`,
+        COUNT(*) AS pair_cnt
+    FROM
+        wdi_country
+    GROUP BY
+        region, `Income Group`
+), 
+merge_cte AS (
+    SELECT
+        a.region,
+        a.`Income Group`,
+        a.pair_cnt,
+        b.region_cnt,
+        c.income_cnt AS income_cnt,  -- corrected alias
+        d.total_cnt,
+        100.0 * a.pair_cnt / d.total_cnt AS pct
+    FROM
+        pair_cte a
+        LEFT JOIN region_cte b ON a.region = b.region
+        LEFT JOIN income_cte c ON a.`Income Group` = c.`Income Group`
+        CROSS JOIN total_cte d
+)
+SELECT
+    region,
+    ROUND(SUM(CASE WHEN `Income Group` = 'Low income' THEN pct ELSE 0 END), 1) AS `Low Income`,
+    ROUND(SUM(CASE WHEN `Income Group` = 'Lower middle income' THEN pct ELSE 0 END), 1) AS `Low Middle`,
+    ROUND(SUM(CASE WHEN `Income Group` = 'Upper middle income' THEN pct ELSE 0 END), 1) AS `Upper Middle`,
+    ROUND(SUM(CASE WHEN `Income Group` = 'High income' THEN pct ELSE 0 END), 1) AS `High Income`,
+    ROUND(SUM(pct), 1) AS `Row Total`
+FROM
+    merge_cte
+GROUP BY
+    region
+ORDER BY
+    region;
 """)
+
 
 ```
 
@@ -407,7 +666,28 @@ select "doh!" as "Homer says ..." from dual
 ## (This is much simpler than task 20!)
 
 run_sql_and_return_html(cnx,"""
-select "doh!" as "Homer says ..." from dual
+WITH 
+income_cte AS (
+    SELECT `Income Group`, COUNT(*) AS income_cnt
+    FROM wdi_country
+    WHERE `Income Group` IS NOT NULL
+    GROUP BY `Income Group`
+),
+total_cte AS (
+    SELECT COUNT(*) AS total_cnt
+    FROM wdi_country
+)
+SELECT
+    `Income Group`,
+    income_cnt,
+    total_cnt,
+    ROUND(100.0 * income_cnt / total_cnt, 1) AS `Pct of Total`
+FROM
+    income_cte,
+    total_cte
+ORDER BY
+    `Income Group`;
+
 """)
 
 ```
@@ -417,28 +697,18 @@ select "doh!" as "Homer says ..." from dual
 
 1. Reflect on the SQL skills you used throughout these exercises. Which skills do you feel most confident in, and which do you think need more practice? How has this assignment helped you build or reinforce specific SQL competencies?
 
-( response goes here)
+Throughout these exercises, I have learned more about basic SQL and I can say that I am much more confident. The operations have come easy now and I understand how to do it without much confusion. One skill that I still need more practice on is nest subqueries, especially using them in WHERE clauses and combining with joins. Overall, this assignment helped me use SQL syntax to real data problems and I am more comfortable writing queries without a lot of help and notes. 
 
 2. Problem-Solving Approach: Describe your approach to tackling the more complex tasks (like Tasks 18, 23, and 24). How did you break down these problems, and what steps did you take when you encountered challenges? How would you approach a similar problem differently in the future?
 
-( response goes here)
-
+For those three tasks, I tried to understand what exactly the question was asking and then thought about how to build it with SQL. Whenever I ran into any issues, I would test and troubleshoot small parts of the query to make sure that it was working properly before combining them. I also referred back to earlier tasks to see if there were any patterns or techniques I could reuse. In the future, I would approach similar problems by planning and breaking the problem into smaller, manageable steps before writing the SQL.
 
 3. Learning Takeaways: Consider the overall learning experience from this assignment. What were the biggest takeaways about working with SQL for data analysis and transformation? How do you think these skills will apply in real-world scenarios or future coursework?
 
-( response goes here)
+This assignment showed me how useful SQL is for analyzing and transforming data. I understand how much more complex SQL can be and used to solve many different real-world problems. Another big takeaway that I got from this assignment was that SQL is not just used to pull and review data, but you can filter, reshape, and organize data for further analysis. I think these skills will apply for tasks, such as, identifying missing values, combining multiple tables, and grouping categories together for in-dept data anaylsis.
 
-
-# README
-
-A quality README is an important part of EVERY project. Using the Quarto *include* command we're including a copy of your README in the project report so that a human can evaluate it.
-
-Make sure that you edit the README so that it's explanatory!  Note that you don't need a readme within the *reports* folder for this assignment. We're only
-focused on the root *README.md*.
-
-[Here is some info](https://www.freecodecamp.org/news/how-to-write-a-good-readme-file/) on how to write a good README!
+## README
 
 ::: {style="background:lightgray; margin-left:20px; border-top: 3px solid black; border-bottom: 3px solid black; padding-left:20px; padding-right:20px"}
 {{< include ../README.md >}}
 :::
-
