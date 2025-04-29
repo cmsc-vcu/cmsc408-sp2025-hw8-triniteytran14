@@ -91,12 +91,10 @@ List all non-countries.
 ## (skills: select, where)
 
 run_sql_and_return_html(cnx,"""
-select 
-  'Short Name'
-from
-  world_bank_data.wdi_country
-where
-  region is NULL
+SELECT `Country Name`
+FROM wdi_country
+WHERE `Region` IS NULL
+ORDER BY `Country Name`;
 """)
 ```
 
@@ -536,54 +534,27 @@ where
 
 run_sql_and_return_html(cnx,"""
 WITH 
-region_cte AS (
-    SELECT region, COUNT(*) AS region_cnt 
-    FROM wdi_country
-    WHERE region IS NOT NULL
-    GROUP BY region
-), 
 income_cte AS (
     SELECT `Income Group`, COUNT(*) AS income_cnt
     FROM wdi_country
     WHERE `Income Group` IS NOT NULL
     GROUP BY `Income Group`
-), 
+),
 total_cte AS (
     SELECT COUNT(*) AS total_cnt
     FROM wdi_country
-    WHERE region IS NOT NULL AND `Income Group` IS NOT NULL
-), 
-pair_cte AS (
-    SELECT
-        region,
-        `Income Group`,
-        COUNT(*) AS pair_cnt
-    FROM
-        wdi_country
-    WHERE
-        region IS NOT NULL
-        AND `Income Group` IS NOT NULL
-    GROUP BY
-        region, `Income Group`
-), 
-merge_cte AS (
-    SELECT
-        a.region,
-        a.`Income Group`,
-        a.pair_cnt,
-        b.region_cnt,
-        c.income_cnt,
-        d.total_cnt,
-        ROUND(100.0 * a.pair_cnt / d.total_cnt, 1) AS `Pct of Total`
-    FROM
-        pair_cte a
-        LEFT JOIN region_cte b ON a.region = b.region
-        LEFT JOIN income_cte c ON a.`Income Group` = c.`Income Group`
-        CROSS JOIN total_cte d
+    WHERE `Income Group` IS NOT NULL
 )
-SELECT * 
-FROM merge_cte
-ORDER BY region, `Income Group`;
+SELECT
+    i.`Income Group`,
+    i.income_cnt,
+    t.total_cnt,
+    ROUND(100.0 * i.income_cnt / t.total_cnt, 1) AS pct_of_total
+FROM
+    income_cte i,
+    total_cte t
+ORDER BY
+    pct_of_total DESC;
 
 """)
 
@@ -676,18 +647,18 @@ income_cte AS (
 total_cte AS (
     SELECT COUNT(*) AS total_cnt
     FROM wdi_country
+    WHERE `Income Group` IS NOT NULL
 )
 SELECT
-    `Income Group`,
-    income_cnt,
-    total_cnt,
-    ROUND(100.0 * income_cnt / total_cnt, 1) AS `Pct of Total`
+    i.`Income Group`,
+    i.income_cnt,
+    t.total_cnt,
+    ROUND(100.0 * i.income_cnt / t.total_cnt, 1) AS pct_of_total
 FROM
-    income_cte,
-    total_cte
+    income_cte i,
+    total_cte t
 ORDER BY
-    `Income Group`;
-
+    pct_of_total DESC;
 """)
 
 ```
